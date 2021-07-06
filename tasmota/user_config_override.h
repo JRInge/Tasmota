@@ -214,9 +214,6 @@ Relay1     21         224       Relay
     #endif
 
     // -- Optional light modules ----------------------
-    #ifdef  USE_LIGHT
-    #undef  USE_LIGHT                                // Remove support for light control
-    #endif
     #ifdef  USE_WS2812
     #undef  USE_WS2812                               // WS2812 Led string using library NeoPixelBus (+5k code, +1k mem, 232 iram) - Disable by //
     #endif
