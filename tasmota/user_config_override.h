@@ -118,9 +118,25 @@ Examples :
 #ifdef  USE_EMULATION_WEMO
 #undef  USE_EMULATION_WEMO                       // Disable Belkin WeMo emulation for Alexa (+6k code, +2k mem common)
 #endif
+
+// -- mDNS ----------------------------------------
+#ifdef  MDNS_ENABLED
+#undef  MDNS_ENABLED
+#endif
+#define MDNS_ENABLED        true                 // [SetOption55] Use mDNS (false = Disable, true = Enable)
 #ifndef USE_DISCOVERY
 #define USE_DISCOVERY                            // Enable mDNS for the following services (+8k code or +23.5k code with core 2_5_x, +0.3k mem)
+#ifndef WEBSERVER_ADVERTISE
+#define WEBSERVER_ADVERTISE                      // Provide access to webserver by name <Hostname>.local/
+#endif
+#ifndef MQTT_HOST_DISCOVERY
+#define MQTT_HOST_DISCOVERY                      // Find MQTT host server (overrides MQTT_HOST if found)
+#endif
 
+// -- Ping ----------------------------------------
+#ifndef USE_PING
+#define USE_PING                                 // Enable Ping command (+2k code)
+#endif
 
 // ***********************************************
 // ** Firmare specific settings ******************
