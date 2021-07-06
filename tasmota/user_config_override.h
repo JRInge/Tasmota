@@ -126,6 +126,7 @@ Examples :
 #define MDNS_ENABLED        true                 // [SetOption55] Use mDNS (false = Disable, true = Enable)
 #ifndef USE_DISCOVERY
 #define USE_DISCOVERY                            // Enable mDNS for the following services (+8k code or +23.5k code with core 2_5_x, +0.3k mem)
+#endif
 #ifndef WEBSERVER_ADVERTISE
 #define WEBSERVER_ADVERTISE                      // Provide access to webserver by name <Hostname>.local/
 #endif
@@ -166,6 +167,7 @@ Relay1     21         224       Relay
     // Put here your override for firmware tasmota-up111
     #ifdef  USE_I2C
     #undef  USE_I2C
+    #endif
 
     // -- Optional modules ----------------------------
     #ifdef  ROTARY_V1
