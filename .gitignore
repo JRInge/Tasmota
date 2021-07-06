@@ -17,7 +17,7 @@
 .cache
 data
 unpacked_fs
-tasmota/user_config_override.h
+# tasmota/user_config_override.h
 build
 build_output
 firmware.map
@@ -26,8 +26,8 @@ tasmota/tasmota.ino.cpp
 tasmota*.bin
 tasmota*.bin.gz
 tasmota*.map
-platformio_override.ini
-platformio_tasmota_cenv.ini
+# platformio_override.ini
+# platformio_tasmota_cenv.ini
 
 ## Visual Studio Code specific ######
 .vscode
