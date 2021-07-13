@@ -172,6 +172,10 @@ Relay1     21         224       Relay
     #define CODE_IMAGE_STR "up111"
 
     // Put here your override for firmware tasmota-up111
+
+    #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
+    #define USER_TEMPLATE "{\"NAME\":\"Gosund UP111\",\"GPIO\":[0,320,0,32,2720,2656,0,0,2624,576,224,0,0,0],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
+
     #ifdef  USE_I2C
     #undef  USE_I2C
     #endif
