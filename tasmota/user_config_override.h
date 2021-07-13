@@ -88,10 +88,6 @@ Examples :
 // Import wifi credentials
 #include "secrets.h"
 
-// Use auto-discovered MQTT broker
-#undef  MQTT_HOST
-#undef  MQTT_PORT
-
 #undef  NTP_SERVER1
 #define NTP_SERVER1         "europe.pool.ntp.org"
 #undef  NTP_SERVER2
@@ -140,6 +136,10 @@ Examples :
 #ifndef MQTT_HOST_DISCOVERY
 #define MQTT_HOST_DISCOVERY                      // Find MQTT host server (overrides MQTT_HOST if found)
 #endif
+#ifdef  MQTT_HOST
+#undef  MQTT_HOST
+#endif
+#define MQTT_HOST ""                             // Use discovery by default
 
 // -- Ping ----------------------------------------
 #ifndef USE_PING
