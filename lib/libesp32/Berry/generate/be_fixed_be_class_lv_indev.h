@@ -15,6 +15,6 @@ static be_define_const_map(
 BE_EXPORT_VARIABLE be_define_const_class(
     be_class_lv_indev,
     1,
-    (bclass *)&be_class_lv_obj,
+    NULL,
     lv_indev
 );
