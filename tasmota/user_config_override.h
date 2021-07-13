@@ -85,6 +85,13 @@ Examples :
 // !!! Remember that your changes GOES AT THE BOTTOM OF THIS FILE right before the last #endif !!!
 */
 
+// Import wifi credentials
+#include "secrets.h"
+
+// Use auto-discovered MQTT broker
+#undef  MQTT_HOST
+#undef  MQTT_PORT
+
 #undef  NTP_SERVER1
 #define NTP_SERVER1         "europe.pool.ntp.org"
 #undef  NTP_SERVER2
@@ -110,7 +117,7 @@ Examples :
 #undef  USE_DOMOTICZ                             // Enable Domoticz (+6k code, +0.3k mem)
 #endif
 #ifndef USE_JAVASCRIPT_ES6
-#define USE_JAVASCRIPT_ES6                       // Enable ECMAScript6 syntax using less JavaScript code bytes (fails on IE11)
+#define USE_JAVASCRIPT_ES6                       // Disable ECMAScript6 syntax using less JavaScript code bytes (fails on IE11)
 #endif
 #ifdef  USE_EMULATION_HUE
 #undef  USE_EMULATION_HUE                        // Disable Hue Bridge emulation for Alexa (+14k code, +2k mem common)
