@@ -309,6 +309,150 @@ Relay1     21         224       Relay
 
 #endif
 
+// -- Options for firmware tasmota32-d1-airq ------
+#ifdef FIRMWARE_D1_AIRQ
+
+    // If these settings are only for ESP32, you can check these
+    // are used only when building for ESP32
+    #ifndef ESP32
+    #error *** This setup is for tasmota32 only ***
+    #endif
+
+    #warning **** Build: D1-AIRQ****
+    #undef CODE_IMAGE_STR
+    #define CODE_IMAGE_STR "mini-d1-esp32-airq"
+
+    // Put here your override for firmware tasmota32-mini-d1-esp32
+
+    #ifndef  USE_I2C
+    #define  USE_I2C
+    #endif
+
+    // -- Low level interface devices -----------------
+    #ifndef  USE_DHT
+    #define  USE_DHT                                 // Support for DHT11, AM2301 (DHT21, DHT22, AM2302, AM2321) and SI7021 Temperature and Humidity sensor (1k6 code)
+    #endif
+
+    // -- Optional modules ----------------------------
+
+    #ifndef USE_AHT2x
+    #define USE_AHT2x                              // [I2cDriver43] Enable AHT20 instead of AHT1x humidity and temperature sensor (I2C address 0x38) (+0k8 code)
+    #endif
+
+    #ifndef USE_VINDRIKTNING
+    #define USE_VINDRIKTNING                       // Add support for IKEA VINDRIKTNING particle concentration sensor (+0k6 code)
+    #endif
+    #ifndef VINDRIKTNING_SHOW_PM1
+    #define VINDRIKTNING_SHOW_PM1                  // Display undocumented/supposed PM1.0 values
+    #endif
+    #ifndef VINDRIKTNING_SHOW_PM10
+    #define VINDRIKTNING_SHOW_PM10                 // Display undocumented/supposed PM10 values
+    #endif
+
+
+    #ifndef USE_DISPLAY
+    #define USE_DISPLAY                            // Add I2C Display Support (+2k code)
+    #endif
+
+    #ifndef USE_DISPLAY_SSD1306
+    #define USE_DISPLAY_SSD1306                    // [DisplayModel 2] [I2cDriver4] Enable SSD1306 Oled 128x64 display (I2C addresses 0x3C and 0x3D) (+16k code)
+    #undef
+
+    #ifdef USE_DISPLAY_LCD
+    #undef USE_DISPLAY_LCD                         // [DisplayModel 1] [I2cDriver3] Enable Lcd display (I2C addresses 0x27 and 0x3F) (+6k code)
+    #endif
+    #ifdef USE_DISPLAY_MATRIX
+    #undef USE_DISPLAY_MATRIX                      // [DisplayModel 3] [I2cDriver5] Enable 8x8 Matrix display (I2C adresseses see below) (+11k code)
+    #endif
+    #ifdef USE_DISPLAY_SEVENSEG
+    #undef USE_DISPLAY_SEVENSEG                 // [DisplayModel 11] [I2cDriver47] Enable sevenseg display (I2C 0x70-0x77) (<+11k code)
+    #endif
+
+
+    #ifdef  ROTARY_V1
+    #undef  ROTARY_V1                                // Remove support for Rotary Encoder as used in MI Desk Lamp (+0k8 code)
+    #endif
+    #ifdef  USE_SONOFF_RF
+    #undef  USE_SONOFF_RF                            // Remove support for Sonoff Rf Bridge (+3k2 code)
+    #endif
+    #ifdef  USE_SONOFF_SC
+    #undef  USE_SONOFF_SC                            // Remove support for Sonoff Sc (+1k1 code)
+    #endif
+    #ifdef  USE_TUYA_MCU
+    #undef  USE_TUYA_MCU                             // Remove support for Tuya Serial MCU
+    #endif
+    #ifdef  USE_ARMTRONIX_DIMMERS
+    #undef  USE_ARMTRONIX_DIMMERS                    // Remove support for Armtronix Dimmers (+1k4 code)
+    #endif
+    #ifdef  USE_PS_16_DZ
+    #undef  USE_PS_16_DZ                             // Remove support for PS-16-DZ Dimmer (+2k code)
+    #endif
+    #ifdef  USE_SONOFF_IFAN
+    #undef  USE_SONOFF_IFAN                          // Remove support for Sonoff iFan02 and iFan03 (+2k code)
+    #endif
+    #ifdef  USE_BUZZER
+    #undef  USE_BUZZER                               // Remove support for a buzzer (+0k6 code)
+    #endif
+    #ifdef  USE_ARILUX_RF
+    #undef  USE_ARILUX_RF                            // Remove support for Arilux RF remote controller (+0k8 code, 252 iram (non 2.3.0))
+    #endif
+    #ifdef  USE_SHUTTER
+    #undef  USE_SHUTTER                              // Remove Shutter support for up to 4 shutter with different motortypes (+11k code)
+    #endif
+    #ifdef  USE_EXS_DIMMER
+    #undef  USE_EXS_DIMMER                           // Remove support for ES-Store Wi-Fi Dimmer (+1k5 code)
+    #endif
+    #ifdef  USE_PWM_DIMMER
+    #undef  USE_PWM_DIMMER                           // Remove support for MJ-SD01/acenx/NTONPOWER PWM dimmers (+2k3 code, DGR=0k7)
+    #endif
+    #ifdef  USE_SONOFF_D1
+    #undef  USE_SONOFF_D1                            // Remove support for Sonoff D1 Dimmer (+0k7 code)
+    #endif
+    #ifdef  USE_SHELLY_DIMMER
+    #undef  USE_SHELLY_DIMMER                        // Remove support for Shelly Dimmer (+3k code)
+    #endif
+
+    // -- Optional light modules ----------------------
+    #ifdef  USE_WS2812
+    #undef  USE_WS2812                               // WS2812 Led string using library NeoPixelBus (+5k code, +1k mem, 232 iram) - Disable by //
+    #endif
+    #ifdef  USE_MY92X1
+    #undef  USE_MY92X1                               // Remove support for MY92X1 RGBCW led controller as used in Sonoff B1, Ailight and Lohas
+    #endif
+    #ifdef  USE_SM16716
+    #undef  USE_SM16716                              // Remove support for SM16716 RGB LED controller (+0k7 code)
+    #endif
+    #ifdef  USE_SM2135
+    #undef  USE_SM2135                               // Remove support for SM2135 RGBCW led control as used in Action LSC (+0k6 code)
+    #endif
+    #ifdef  USE_SONOFF_L1
+    #undef  USE_SONOFF_L1                            // Remove support for Sonoff L1 led control
+    #endif
+    #ifdef  USE_ELECTRIQ_MOODL
+    #undef  USE_ELECTRIQ_MOODL                       // Remove support for ElectriQ iQ-wifiMOODL RGBW LED controller (+0k3 code)
+    #endif
+    #ifdef  USE_LIGHT_PALETTE
+    #undef  USE_LIGHT_PALETTE                        // Remove support for color palette (+0k7 code)
+    #endif
+    #ifdef  USE_LIGHT_VIRTUAL_CT
+    #undef  USE_LIGHT_VIRTUAL_CT                     // Remove support for Virtual White Color Temperature (+1.1k code)
+    #endif
+    #ifdef  USE_DGR_LIGHT_SEQUENCE
+    #undef  USE_DGR_LIGHT_SEQUENCE                   // Remove support for device group light sequencing (requires USE_DEVICE_GROUPS) (+0k2 code)
+    #endif
+
+    // -- Power monitoring sensors --------------------
+    #ifdef USE_ENERGY_SENSOR
+    #undef USE_ENERGY_SENSOR                        // Remove support for Energy Monitors (+14k code)
+    #endif
+
+    // -- IR Remote features - all protocols from IRremoteESP8266 --------------------------
+    // Further configuration required to enable full IR protocols.
+    #ifdef  USE_IR_REMOTE
+    #undef  USE_IR_REMOTE                            // Send IR remote commands using library IRremoteESP8266 (+4k3 code, 0k3 mem, 48 iram)
+    #endif
+
+#endif
 
 
 
