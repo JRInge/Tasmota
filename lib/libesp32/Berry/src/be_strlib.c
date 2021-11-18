@@ -80,6 +80,7 @@ static bstring* sim2str(bvm *vm, bvalue *v)
     case BE_BOOL:
         strcpy(sbuf, var_tobool(v) ? "true" : "false");
         break;
+    case BE_INDEX:
     case BE_INT:
         sprintf(sbuf, BE_INT_FORMAT, var_toint(v));
         break;
@@ -96,8 +97,11 @@ static bstring* sim2str(bvm *vm, bvalue *v)
     case BE_MODULE:
         module2str(sbuf, v);
         break;
+    case BE_COMPTR:
+        sprintf(sbuf, "<ptr: %p>", var_toobj(v));
+        break;
     default:
-        strcpy(sbuf, "(unknow value)");
+        strcpy(sbuf, "(unknown value)");
         break;
     }
     return be_newstr(vm, sbuf);
@@ -217,7 +221,7 @@ const char* be_pushvfstr(bvm *vm, const char *format, va_list arg)
             break;
         }
         default:
-            pushstr(vm, "(unknow)", 8);
+            pushstr(vm, "(unknown)", 8);
             break;
         }
         concat2(vm);
@@ -322,15 +326,47 @@ BERRY_API const char *be_str2num(bvm *vm, const char *str)
     return sout;
 }
 
+static bstring* string_range(bvm *vm, bstring *str, binstance *range)
+{
+    bint lower, upper;
+    bint size = str_len(str);   /* size of source string */
+    // bint size = be_data_size(vm, -1); /* get source list size */
+    /* get index range */
+    bvalue temp;
+    be_instance_member(vm, range, be_newstr(vm, "__lower__"), &temp);
+    lower = var_toint(&temp);
+    be_instance_member(vm, range, be_newstr(vm, "__upper__"), &temp);
+    upper = var_toint(&temp);
+    /* protection scope */
+    if (upper < 0) { upper = size + upper; }
+    if (lower < 0) { lower = size + lower; }
+    upper = upper < size ? upper : size - 1;
+    lower = lower < 0 ? 0 : lower;
+    if (lower > upper) {
+        return be_newstrn(vm, "", 0);   /* empty string */
+    }
+    return be_newstrn(vm, str(str) + lower, upper - lower + 1);
+
+}
+
 /* string subscript operation */
 bstring* be_strindex(bvm *vm, bstring *str, bvalue *idx)
 {
     if (var_isint(idx)) {
         int pos = var_toidx(idx);
-        if (pos < str_len(str)) {
+        int size = str_len(str);
+        if (pos < 0) { pos = size + pos; }
+        if ((pos < size) && (pos >= 0)) {
             return be_newstrn(vm, str(str) + pos, 1);
         }
         be_raise(vm, "index_error", "string index out of range");
+    } else if (var_isinstance(idx)) {
+        binstance * ins = var_toobj(idx);
+        const char *cname = str(be_instance_name(ins));
+        if (!strcmp(cname, "range")) {
+            return string_range(vm, str, ins);
+        }
+        // str(be_instance_name(i))
     }
     be_raise(vm, "index_error", "string indices must be integers");
     return NULL;
@@ -511,11 +547,15 @@ static int str_format(bvm *vm)
             concat2(vm);
             p = get_mode(p + 1, mode);
             buf[0] = '\0';
-            if (index > top) {
+            if (index > top && *p != '%') {
                 be_raise(vm, "runtime_error", be_pushfstring(vm,
                     "bad argument #%d to 'format': no value", index));
             }
             switch (*p) {
+            case '%':
+                be_pushstring(vm, "%");
+                --index;  /* compensate the future ++index */
+                break;
             case 'd': case 'i': case 'o':
             case 'u': case 'x': case 'X':
                 if (be_isint(vm, index)) {
@@ -748,6 +788,53 @@ static int str_toupper(bvm *vm) {
     return str_touplower(vm, btrue);
 }
 
+static int str_tr(bvm *vm)
+{
+    if (be_top(vm) == 3 && be_isstring(vm, 1) && be_isstring(vm, 2) && be_isstring(vm, 3)) {
+        const char *p, *s = be_tostring(vm, 1);
+        const char *t1 = be_tostring(vm, 2);
+        const char *t2 = be_tostring(vm, 3);
+        if (strlen(t2) < strlen(t1)) {
+            be_raise(vm, "value_error", "invalid translation pattern");
+        }
+        size_t len = (size_t)be_strlen(vm, 1);
+        char *buf, *q;
+        buf = be_pushbuffer(vm, len);
+        /* convert each char */
+        for (p = s, q = buf; *p != '\0'; ++p, ++q) {
+            const char *p1, *p2;
+            *q = *p;  /* default to no change */
+            for (p1=t1, p2=t2; *p1 != '\0'; ++p1, ++p2) {
+                if (*p == *p1) {
+                    *q = *p2;
+                    break;
+                }
+            }
+        }
+        be_pushnstring(vm, buf, len); /* make escape string from buffer */
+        be_remove(vm, 2); /* remove buffer */
+        be_return(vm);
+    }
+    be_return_nil(vm);
+}
+
+static int str_escape(bvm *vm)
+{
+    int top = be_top(vm);
+    if (top >= 1 && be_isstring(vm, 1)) {
+        int quote = 'u';
+        if (top >= 2 && be_isbool(vm, 2)) {
+            if (be_tobool(vm, 1)) {
+                quote = 'x';
+            }
+        }
+        be_tostring(vm, 1);
+        be_toescape(vm, 1, quote);
+        be_pushvalue(vm, 1);
+        be_return(vm);
+    }
+    be_return_nil(vm);
+}
 
 #if !BE_USE_PRECOMPILED_OBJECT
 be_native_module_attr_table(string) {
@@ -760,6 +847,8 @@ be_native_module_attr_table(string) {
     be_native_module_function("char", str_char),
     be_native_module_function("tolower", str_tolower),
     be_native_module_function("toupper", str_toupper),
+    be_native_module_function("tr", str_tr),
+    be_native_module_function("escape", str_escape),
 };
 
 be_define_native_module(string, NULL);
@@ -775,6 +864,8 @@ module string (scope: global, depend: BE_USE_STRING_MODULE) {
     char, func(str_char)
     tolower, func(str_tolower)
     toupper, func(str_toupper)
+    tr, func(str_tr)
+    escape, func(str_escape)
 }
 @const_object_info_end */
 #include "../generate/be_fixed_string.h"

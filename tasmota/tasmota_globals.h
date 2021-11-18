@@ -156,7 +156,11 @@ String EthernetMacAddress(void);
 
 #endif  // ESP32
 
-#ifdef USE_PID
+/*********************************************************************************************\
+ * Fallback parameters
+\*********************************************************************************************/
+
+#if defined(USE_PID) && (!defined(PID_USE_TIMPROP) || (PID_USE_TIMPROP > 0))
 #define USE_TIMEPROP
 #endif
                                                // See https://github.com/esp8266/Arduino/pull/4889
@@ -340,6 +344,25 @@ String EthernetMacAddress(void);
 #define STARTING_OFFSET             30         // NOVA SDS parameter used in settings
 #endif
 
+#ifndef WIFI_RGX_STATE
+#define WIFI_RGX_STATE              0
+#endif
+#ifndef WIFI_RGX_NAPT
+#define WIFI_RGX_NAPT               0
+#endif
+#ifndef WIFI_RGX_SSID
+#define WIFI_RGX_SSID               ""
+#endif
+#ifndef WIFI_RGX_PASSWORD
+#define WIFI_RGX_PASSWORD           ""
+#endif
+#ifndef WIFI_RGX_IP_ADDRESS
+#define WIFI_RGX_IP_ADDRESS         "192.168.99.1"
+#endif
+#ifndef WIFI_RGX_SUBNETMASK
+#define WIFI_RGX_SUBNETMASK         "255.255.255.0"
+#endif
+
 /*********************************************************************************************\
  * UserConfig related parameters
 \*********************************************************************************************/
@@ -471,6 +494,23 @@ bool first_device_group_is_local = true;
 #else
 #define SHOW_FREE_MEM(WHERE)
 #endif
+
+#ifndef USE_PROFILING
+#undef USE_PROFILE_DRIVER
+#undef USE_PROFILE_FUNCTION
+#endif
+
+#ifdef USE_PROFILE_DRIVER
+#define PROFILE_DRIVER(DRIVER, FUNCTION, START) AddLogDriver(DRIVER, FUNCTION, START)
+#else
+#define PROFILE_DRIVER(DRIVER, FUNCTION, START)
+#endif  // USE_PROFILE_DRIVER
+
+#ifdef USE_PROFILE_FUNCTION
+#define PROFILE_FUNCTION(DRIVER, INDEX, FUNCTION, START) AddLogFunction(DRIVER, INDEX, FUNCTION, START)
+#else
+#define PROFILE_FUNCTION(DRIVER, INDEX, FUNCTION, START)
+#endif  // USE_PROFILE_DRIVER
 
 /*********************************************************************************************\
  * Macro for SetOption synonyms

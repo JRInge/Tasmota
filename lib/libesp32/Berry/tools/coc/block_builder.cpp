@@ -33,10 +33,12 @@ block_builder::block_builder(const object_block *object, const macro_table *macr
             m_strtab.push_back(it->second);
         }
         
-        for (auto i : object->data) {
-            if (i.second.depend.empty() || macro->query(i.second.depend)) {
-                m_block.data[i.first] = i.second.value;
-                m_strtab.push_back(i.first);
+        for (auto key : object->data_ordered) {
+            auto second = object->data.at(key);
+            if (second.depend.empty() || macro->query(second.depend)) {
+                m_block.data[key] = second.value;
+                m_strtab.push_back(key);
+                m_block.data_ordered.push_back(key);  /* record insertion order */
             }
         }
     }
@@ -106,10 +108,9 @@ std::string block_builder::vartab_tostring(const block &block)
 
     idxblk = block;
     idxblk.data.clear();
-    for (auto it : block.data) {
-        varvec.push_back(it.second);
-        it.second = "int(" + std::to_string(index++) + ")";
-        idxblk.data.insert(it);
+    for (auto key : block.data_ordered) {
+        varvec.push_back(block.data.at(key));
+        idxblk.data[key] = "int(" + std::to_string(index++) + ")";
     }
 
     ostr << map_tostring(idxblk, block.name + "_map", true) << std::endl;
@@ -142,8 +143,7 @@ std::string block_builder::module_tostring(const block &block)
     if (scp != "static") { /* extern */
         ostr << "\n" << scp
              << " be_define_const_native_module("
-             << block.name << ", "
-             << init(block) << ");" << std::endl;
+             << block.name << ");" << std::endl;
     }
     return ostr.str();
 }
@@ -165,12 +165,6 @@ std::string block_builder::name(const block &block)
 {
     auto it = block.attr.find("name");
     return it == block.attr.end() ? block.name : it->second;
-}
-
-std::string block_builder::init(const block &block)
-{
-    auto it = block.attr.find("init");
-    return it == block.attr.end() ? "NULL" : it->second;
 }
 
 void block_builder::writefile(const std::string &filename, const std::string &text)

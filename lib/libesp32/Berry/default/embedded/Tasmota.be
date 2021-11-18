@@ -1,7 +1,58 @@
 #- Native code used for testing and code solidification -#
 #- Do not use it -#
 
-class Tasmota2 : Tasmota
+class Timer
+  var due, f, id
+  def init(due, f, id)
+    self.due = due
+    self.f = f
+    self.id = id
+  end
+  def tostring()
+    import string
+    return string.format("<instance: %s(%s, %s, %s)", str(classof(self)),
+              str(self.due), str(self.f), str(self.id))
+  end
+end
+
+tasmota = nil
+class Tasmota
+  var _rules
+  var _timers
+  var _ccmd
+  var _drivers
+  var _cb
+  var wire1
+  var wire2
+  var cmd_res     # store the command result, nil if disables, true if capture enabled, contains return value
+  var global      # mapping to TasmotaGlobal
+  var settings
+  var wd          # last working directory
+
+  def init()
+    # instanciate the mapping object to TasmotaGlobal
+    self.global = ctypes_bytes_dyn(self._global_addr, self._global_def)
+    import introspect
+    var settings_addr = bytes(self._settings_ptr, 4).get(0,4)
+    if settings_addr
+      self.settings = ctypes_bytes_dyn(introspect.toptr(settings_addr), self._settings_def)
+    end
+    self.wd = ""
+  end
+
+  # create a specific sub-class for rules: pattern(string) -> closure
+  # Classs KV has two members k and v
+  def kv(k, v)
+    class KV
+      var k, v
+      def init(k,v)
+        self.k = k
+        self.v = v
+      end
+    end
+
+    return KV(k, v)
+  end
 
   # add `chars_in_string(s:string,c:string) -> int``
   # looks for any char in c, and return the position of the first char
@@ -9,12 +60,18 @@ class Tasmota2 : Tasmota
   # inv is optional and inverses the behavior, i.e. look for chars not in the list
   def chars_in_string(s,c,inv)
     var inverted = inv ? true : false
-    for i:0..size(s)-1
+    var i = 0
+    while i < size(s)
+    # for i:0..size(s)-1
       var found = false
-      for j:0..size(c)-1
+      var j = 0
+      while j < size(c)
+      # for j:0..size(c)-1
         if s[i] == c[j] found = true end
+        j += 1
       end
       if inverted != found return i end
+      i += 1
     end
     return -1
   end
@@ -23,7 +80,7 @@ class Tasmota2 : Tasmota
   def find_key_i(m,keyi)
     import string
     var keyu = string.toupper(keyi)
-    if classof(m) == map
+    if isinstance(m, map)
       for k:m.keys()
         if string.toupper(k)==keyu || keyi=='?'
           return k
@@ -57,10 +114,10 @@ class Tasmota2 : Tasmota
   # Rules
   def add_rule(pat,f)
     if !self._rules
-      self._rules={}
+      self._rules=[]
     end
     if type(f) == 'function'
-      self._rules[pat] = f
+      self._rules.push(self.kv(pat, f))
     else
       raise 'value_error', 'the second argument is not a function'
     end
@@ -68,7 +125,14 @@ class Tasmota2 : Tasmota
 
   def remove_rule(pat)
     if self._rules
-      self._rules.remove(pat)
+      var i = 0
+      while i < size(self._rules)
+        if self._rules[i].k == pat
+          self._rules.remove(i)  #- don't increment i since we removed the object -#
+        else
+          i += 1
+        end
+      end
     end
   end
 
@@ -78,10 +142,14 @@ class Tasmota2 : Tasmota
     var rl_list = self.find_op(rule)
     var sub_event = event
     var rl = string.split(rl_list[0],'#')
-    for it:rl
-      found=self.find_key_i(sub_event,it)
+    var i = 0
+    while i < size(rl)
+    # for it:rl
+      var it = rl[i]
+      var found=self.find_key_i(sub_event,it)
       if found == nil return false end
       sub_event = sub_event[found]
+      i += 1
     end
     var op=rl_list[1]
     var op2=rl_list[2]
@@ -111,15 +179,25 @@ class Tasmota2 : Tasmota
   # Run rules, i.e. check each individual rule
   # Returns true if at least one rule matched, false if none
   def exec_rules(ev_json)
-    if self._rules
+    if self._rules || self.cmd_res != nil  # if there is a rule handler, or we record rule results
       import json
-      var ev = json.load(ev_json)
+      var ev = json.load(ev_json)   # returns nil if invalid JSON
       var ret = false
       if ev == nil
-        print('BRY: ERROR, bad json: '+ev_json, 3)
-      else
-        for r: self._rules.keys()
-          ret = self.try_rule(ev,r,self._rules[r]) || ret
+        self.log('BRY: ERROR, bad json: '+ev_json, 3)
+        ev = ev_json                # revert to string
+      end
+      # record the rule payload for tasmota.cmd()
+      if self.cmd_res != nil
+        self.cmd_res = ev
+      end
+      # try all rule handlers
+      if self._rules
+        var i = 0
+        while i < size(self._rules)
+          var kv = self._rules[i]
+          ret = self.try_rule(ev,kv.k,kv.v) || ret  #- call should be first to avoid evaluation shortcut if ret is already true -#
+          i += 1
         end
       end
       return ret
@@ -127,9 +205,33 @@ class Tasmota2 : Tasmota
     return false
   end
 
-  def set_timer(delay,f)
+  # Run tele rules
+  def exec_tele(ev_json)
+    if self._rules
+      import json
+      var ev = json.load(ev_json)   # returns nil if invalid JSON
+      var ret = false
+      if ev == nil
+        self.log('BRY: ERROR, bad json: '+ev_json, 3)
+        ev = ev_json                # revert to string
+      end
+      # insert tele prefix
+      ev = { "Tele": ev }
+
+      var i = 0
+      while i < size(self._rules)
+        var kv = self._rules[i]
+        ret = self.try_rule(ev,kv.k,kv.v) || ret  #- call should be first to avoid evaluation shortcut -#
+        i += 1
+      end
+      return ret
+    end
+    return false
+  end
+
+  def set_timer(delay,f,id)
     if !self._timers self._timers=[] end
-    self._timers.push([self.millis(delay),f])
+    self._timers.push(Timer(self.millis(delay),f,id))
   end
 
   # run every 50ms tick
@@ -137,10 +239,24 @@ class Tasmota2 : Tasmota
     if self._timers
       var i=0
       while i<self._timers.size()
-        if self.time_reached(self._timers[i][0])
-          f=self._timers[i][1]
+        if self.time_reached(self._timers[i].due)
+          var f=self._timers[i].f
           self._timers.remove(i)
           f()
+        else
+          i=i+1
+        end
+      end
+    end
+  end
+
+  # remove timers by id
+  def remove_timer(id)
+    if tasmota._timers
+      var i=0
+      while i<tasmota._timers.size()
+        if self._timers[i].id == id
+          self._timers.remove(i)
         else
           i=i+1
         end
@@ -195,8 +311,8 @@ class Tasmota2 : Tasmota
   def wire_scan(addr,idx)
     # skip if the I2C index is disabled
     if idx != nil && !self.i2c_enabled(idx) return nil end
-    if self.wire1.detect(addr) return self.wire1 end
-    if self.wire2.detect(addr) return self.wire2 end
+    if self.wire1.enabled() && self.wire1.detect(addr) return self.wire1 end
+    if self.wire2.enabled() && self.wire2.detect(addr) return self.wire2 end
     return nil
   end
 
@@ -208,70 +324,167 @@ class Tasmota2 : Tasmota
 
   def load(f)
     import string
+    import path
+
+    # fail if empty string
+    if size(f) == 0 return false end
+    # Ex: f = 'app.zip#autoexec'
+
+    # add leading '/' if absent
+    if f[0] != '/'   f = '/' + f end
+    # Ex: f = '/app.zip#autoexec'
+
+    var f_items = string.split(f, '#')
+    var f_prefix = f_items[0]
+    var f_suffix = f_items[-1]          # last token
+    var f_archive = size(f_items) > 1   # is the file in an archive
+
+    # if no dot, add the default '.be' extension
+    if string.find(f_suffix, '.') < 0   # does the final file has a '.'
+      f += ".be"
+      f_suffix += ".be"
+    end
+    # Ex: f = '/app.zip#autoexec.be'
+
+    # if the filename has no '.' append '.be'
+    var suffix_be  = f_suffix[-3..-1] == '.be'
+    var suffix_bec = f_suffix[-4..-1] == '.bec'
+    # Ex: f = '/app.zip#autoexec.be', f_suffix = 'autoexec.be', suffix_be = true, suffix_bec = false
 
     # check that the file ends with '.be' of '.bec'
-    var fl = string.split(f,'.')
-    if (size(fl) <= 1 || (fl[-1] != 'be' && fl[-1] != 'bec'))
+    if !suffix_be && !suffix_bec
       raise "io_error", "file extension is not '.be' or '.bec'"
     end
-    var native = f[size(f)-1] == 'c'
-    # load - works the same for .be and .bec
 
-    # try if file exists
-    try
-      var ff = open(f, 'r')
-      ff.close()
-    except 'io_error'
-      return false    # signals that file does not exist
+    var f_time = path.last_modified(f_prefix)
+
+    if suffix_bec
+      if f_time == nil  return false end      # file does not exist
+      # f is the right file, continue
+    else
+      var f_time_bc = path.last_modified(f + "c") # timestamp for bytecode
+      if f_time == nil && f_time_bc == nil  return false end
+      if f_time_bc != nil && (f_time == nil || f_time_bc >= f_time)
+        # bytecode exists and is more recent than berry source, use bytecode
+        ##### temporarily disable loading from bec file
+        # f = f + "c"   # use bytecode name
+        suffix_bec = true
+      end
+    end
+    
+    # recall the working directory
+    if f_archive
+      self.wd = f_prefix + "#"
+    else
+      self.wd = ""
     end
 
-    var c = compile(f,'file')
+    var c = compile(f, 'file')
     # save the compiled bytecode
-    if !native
+    if !suffix_bec && !f_archive
       try
-        self.save(f+'c', c)
+        self.save(f + 'c', c)
       except .. as e
-        self.log(string.format('BRY: could not save compiled file %s (%s)',f+'c',e))
+        print(string.format('BRY: could not save compiled file %s (%s)',f+'c',e))
       end
     end
     # call the compiled code
     c()
     # call successfuls
     return true
-
   end
 
-  def event(type, cmd, idx, payload)
-    if type=='cmd' return self.exec_cmd(cmd, idx, payload)
-    elif type=='rule' return self.exec_rules(payload)
-    elif type=='mqtt_data' return nil
-    elif type=='gc' return self.gc()
-    elif type=='every_50ms' return self.run_deferred()
+  def event(event_type, cmd, idx, payload, raw)
+    import introspect
+    import debug
+    import string
+    if event_type=='every_50ms' self.run_deferred() end  #- first run deferred events -#
+
+    var done = false
+    if event_type=='cmd' return self.exec_cmd(cmd, idx, payload)
+    elif event_type=='tele' return self.exec_tele(payload)
+    elif event_type=='rule' return self.exec_rules(payload)
+    elif event_type=='gc' return self.gc()
     elif self._drivers
-      for d:self._drivers
-        try
-          if   type=='every_second' && d.every_second                           d.every_second()
-          elif type=='every_100ms' && d.every_100ms                             d.every_100ms()
-          elif type=='web_add_button' && d.web_add_button                       d.web_add_button()
-          elif type=='web_add_main_button' && d.web_add_main_button             d.web_add_main_button()
-          elif type=='web_add_management_button' && d.web_add_management_button d.web_add_management_button()
-          elif type=='web_add_config_button' && d.web_add_config_button         d.web_add_config_button()
-          elif type=='web_add_console_button' && d.web_add_console_button       d.web_add_console_button()
-          elif type=='save_before_restart' && d.save_before_restart             d.save_before_restart()
-          elif type=='web_add_handler' && d.web_add_handler                     d.web_add_handler()
-          elif type=='web_sensor' && d.web_sensor                               d.web_sensor()
-          elif type=='json_append' && d.json_append                             d.json_append()
-          elif type=='button_pressed' && d.button_pressed                       d.button_pressed()
-          elif type=='web_add_handler' && d.display                             d.display()
-          elif type=='display' && d.display                                     d.display()
+      var i = 0
+      while i < size(self._drivers)
+      #for d:self._drivers
+        var d = self._drivers[i]
+        var f = introspect.get(d, event_type)   # try to match a function or method with the same name
+        if type(f) == 'function'
+          try
+            done = f(d, cmd, idx, payload, raw)
+            if done break end
+          except .. as e,m
+            print(string.format("BRY: Exception> '%s' - %s", e, m))
+            debug.traceback()
           end
-        except .. as e,m
-          import string
-          print(string.format("BRY: Exception> '%s' - %s", e, m))
         end
+        i += 1
+      end
+    end
+
+    # save persist
+    if event_type=='save_before_restart'
+      import persist
+      persist.save()
+    end
+
+    return done
+  end
+
+  def add_driver(d)
+    if self._drivers
+      self._drivers.push(d)
+        else
+      self._drivers = [d]
+    end
+  end
+
+  def remove_driver(d)
+    if self._drivers
+      var idx = self._drivers.find(d)
+      if idx != nil
+        self._drivers.pop(idx)
       end
     end
   end
+
+  # cmd high-level function
+  def cmd(command)
+    self.cmd_res = true      # signal buffer capture
+
+    self._cmd(command)
+    
+    var ret = nil
+    if self.cmd_res != true       # unchanged
+      ret = self.cmd_res
+    end
+    self.cmd_res = nil       # clear buffer
+    
+    return ret
+  end
+
+  # set_light and get_light deprecetaion
+  def get_light(l)
+    print('tasmota.get_light() is deprecated, use light.get()')
+    import light
+    if l != nil
+      return light.get(l)
+    else
+      return light.get()
+    end
+  end
+  def set_light(v,l)
+    print('tasmota.set_light() is deprecated, use light.set()')
+    import light
+    if l != nil
+      return light.set(v,l)
+    else
+      return light.set(v)
+    end
+  end
+
 
   #- dispatch callback number n, with parameters v0,v1,v2,v3 -#
   def cb_dispatch(n,v0,v1,v2,v3)
@@ -297,4 +510,3 @@ class Tasmota2 : Tasmota
   end
 
 end
-tasmota = Tasmota2()

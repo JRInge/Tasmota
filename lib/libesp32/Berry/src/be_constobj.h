@@ -15,6 +15,7 @@ extern "C" {
 #include "be_object.h"
 #include "be_gc.h"
 #include "be_map.h"
+#include "be_list.h"
 #include "be_class.h"
 #include "be_string.h"
 #include "be_module.h"
@@ -37,9 +38,19 @@ extern "C" {
     .type = BE_FUNCTION                                         \
 }
 
+#define be_const_nil() {                                        \
+    .v.i = 0,                                                   \
+    .type = BE_NIL                                              \
+}
+
 #define be_const_int(_val) {                                    \
     .v.i = (bint)(_val),                                        \
     .type = BE_INT                                              \
+}
+
+#define be_const_var(_val) {                                  \
+    .v.i = (bint)(_val),                                        \
+    .type = BE_INDEX                                            \
 }
 
 #define be_const_real(_val) {                                   \
@@ -47,9 +58,24 @@ extern "C" {
     .type = BE_REAL                                             \
 }
 
+#define be_const_real_hex(_val) {                               \
+    .v.p = (void*)(_val),                                       \
+    .type = BE_REAL                                             \
+}
+
+#define be_const_bool(_val) {                                   \
+    .v.b = (bbool)(_val),                                       \
+    .type = BE_BOOL                                             \
+}
+
 #define be_const_str(_str) {                                    \
     .v.s = (bstring*)(_str),                                    \
     .type = BE_STRING                                           \
+}
+
+#define be_const_comptr(_val) {                                 \
+    .v.c = (const void*)(_val),                                       \
+    .type = BE_COMPTR                                           \
 }
 
 #define be_const_class(_class) {                                \
@@ -65,6 +91,21 @@ extern "C" {
 #define be_const_module(_module) {                              \
     .v.c = &(_module),                                          \
     .type = BE_MODULE                                           \
+}
+
+#define be_const_simple_instance(_instance) {                   \
+    .v.c = (_instance),                                         \
+    .type = BE_INSTANCE                                         \
+}
+
+#define be_const_map(_map) {                                    \
+    .v.c = &(_map),                                             \
+    .type = BE_MAP                                              \
+}
+
+#define be_const_list(_list) {                                  \
+    .v.c = &(_list),                                            \
+    .type = BE_LIST                                             \
 }
 
 #define be_define_const_map_slots(_name)                        \
@@ -83,7 +124,7 @@ const bmap _name = {                                            \
 const bclass _name = {                                          \
     be_const_header(BE_CLASS),                                  \
     .nvar = _nvar,                                              \
-    .super = (bclass*)_super,                                   \
+    .super = _super,                                            \
     .members = (bmap*)&_name##_map,                             \
     .name = (bstring*)&be_const_str_##_name_                    \
 }
@@ -113,14 +154,82 @@ const bvector _name = {                                         \
     .end = (void*)(_data + (_size) - 1)                         \
 }
 
-#define be_define_const_native_module(_module, _init)           \
+#define be_define_const_native_module(_module)                  \
 const bntvmodule be_native_module(_module) = {                  \
     .name = #_module,                                           \
     .attrs = NULL,                                              \
     .size = 0,                                                  \
-    .module = (bmodule*)&(m_lib##_module),                      \
-    .init = _init                                               \
+    .module = (bmodule*)&(m_lib##_module)                       \
 }
+
+/* defines needed for solidified classes */
+#define be_local_class(_name, _nvar, _super, _map, _cname)      \
+  const bclass be_class_##_name = {                             \
+    be_const_header(BE_CLASS),                                  \
+    .nvar = _nvar,                                              \
+    .super = (bclass*)_super,                                   \
+    .members = (bmap*)_map,                                     \
+    .name = _cname                                              \
+}
+
+/* defines needed for solidified modules */
+#define be_local_module(_c_name, _module_name, _map)            \
+  static const bmodule m_lib##_c_name = {                       \
+    be_const_header(BE_MODULE),                                 \
+    .table = (bmap*)_map,                                       \
+    .info.name = _module_name                                   \
+}
+
+/* only instances with no super and no sub instance are supported */
+/* primarily for `list` and `map`*/
+#define be_nested_simple_instance(_class_ptr, _members)         \
+  & (const binstance)  {                                        \
+    be_const_header(BE_INSTANCE),                               \
+    .super = NULL,                                              \
+    .sub = NULL,                                                \
+    ._class = (bclass*) _class_ptr,                             \
+    .members = _members                                         \
+  }
+
+// #define be_local_instance(_name, _class_ptr, _members)          \
+//   static const binstance i_##_name = {                          \
+//     be_const_header(BE_INSTANCE),                               \
+//     .super = NULL,                                              \
+//     .sub = NULL,                                                \
+//     ._class = (bclass*) _class_ptr,                             \
+//     .members = _members                                         \
+//   }
+
+#define be_nested_map(_size, _slots)                            \
+  & (const bmap) {                                              \
+    be_const_header(BE_MAP),                                    \
+    .slots = _slots,                                            \
+    .lastfree = NULL,                                           \
+    .size = _size,                                              \
+    .count = _size                                              \
+  }
+
+#define be_nested_list(_size, _items)                           \
+  & (const blist) {                                             \
+    be_const_header(BE_LIST),                                   \
+    .count = _size,                                             \
+    .capacity = _size,                                          \
+    .data = _items                                              \
+  }
+
+#define be_nested_string(_str, _hash, _len)                     \
+  {                                                             \
+    { .s=(be_nested_const_str(_str, _hash, _len ))              \
+    },                                                          \
+    BE_STRING                                                   \
+  }
+
+#define be_nested_key(_str, _hash, _len, _next)                 \
+  {                                                             \
+    { .s=(be_nested_const_str(_str, _hash, _len )) },           \
+    BE_STRING,                                                  \
+    (uint32_t)(_next) & 0xFFFFFF                                \
+  }
 
 #else
 
@@ -135,14 +244,39 @@ const bntvmodule be_native_module(_module) = {                  \
     BE_FUNCTION                                                 \
 }
 
+#define be_const_nil() {                                        \
+    bvaldata(0),                                                \
+    BE_NIL                                                      \
+}
+
 #define be_const_int(_val) {                                    \
     bvaldata(bint(_val)),                                       \
     BE_INT                                                      \
 }
 
+#define be_const_bool(_val) {                                   \
+    bvaldata(bbool(_val)),                                      \
+    BE_BOOL                                                     \
+}
+
+#define be_const_var(_val) {                                  \
+    bvaldata(bint(_val)),                                       \
+    BE_INDEX                                                    \
+}
+
 #define be_const_real(_val) {                                   \
     bvaldata(breal(_val)),                                      \
     BE_REAL                                                     \
+}
+
+#define be_const_real_hex(_val) {                               \
+    bvaldata((void*)(_val)),                                    \
+    BE_REAL                                                     \
+}
+
+#define be_const_comptr(_val) {                                 \
+    bvaldata((void*)(_val)),                                    \
+    BE_COMPTR                                                   \
 }
 
 #define be_const_str(_string) {                                 \
@@ -194,15 +328,18 @@ const bvector _name = {                                         \
     (void*)_data, (void*)(_data + (_size) - 1)                  \
 }
 
-#define be_define_const_native_module(_module, _init)           \
+#define be_define_const_native_module(_module)                  \
 const bntvmodule be_native_module(_module) = {                  \
     #_module,                                                   \
     0, 0,                                                       \
-    (bmodule*)&(m_lib##_module),                                \
-    _init                                                       \
+    (bmodule*)&(m_lib##_module)                                 \
 }
 
 #endif
+
+/* provide pointers to map and list classes for solidified code */
+extern const bclass be_class_list;
+extern const bclass be_class_map;
 
 #ifdef __cplusplus
 }

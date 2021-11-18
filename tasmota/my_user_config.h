@@ -68,7 +68,8 @@
 #define WIFI_IP_ADDRESS        "0.0.0.0"         // [IpAddress1] Set to 0.0.0.0 for using DHCP or enter a static IP address
 #define WIFI_GATEWAY           "192.168.1.1"     // [IpAddress2] If not using DHCP set Gateway IP address
 #define WIFI_SUBNETMASK        "255.255.255.0"   // [IpAddress3] If not using DHCP set Network mask
-#define WIFI_DNS               "192.168.1.1"     // [IpAddress4] If not using DHCP set DNS IP address (might be equal to WIFI_GATEWAY)
+#define WIFI_DNS               "192.168.1.1"     // [IpAddress4] If not using DHCP set DNS1 IP address (might be equal to WIFI_GATEWAY)
+#define WIFI_DNS2              "0.0.0.0"         // [IpAddress5] If not using DHCP set DNS2 IP address (might be equal to WIFI_GATEWAY)
 
 #define STA_SSID1              ""                // [Ssid1] Wi-Fi SSID
 #define STA_PASS1              ""                // [Password1] Wi-Fi password
@@ -78,7 +79,7 @@
 #define WIFI_CONFIG_TOOL       WIFI_RETRY        // [WifiConfig] Default tool if Wi-Fi fails to connect (default option: 4 - WIFI_RETRY)
                                                  // (WIFI_RESTART, WIFI_MANAGER, WIFI_RETRY, WIFI_WAIT, WIFI_SERIAL, WIFI_MANAGER_RESET_ONLY)
                                                  // The configuration can be changed after first setup using WifiConfig 0, 2, 4, 5, 6 and 7.
-#define WIFI_ARP_INTERVAL      0                 // [SetOption41] Send gratuitous ARP interval
+#define WIFI_ARP_INTERVAL      60                // [SetOption41] Send gratuitous ARP interval
 #define WIFI_SCAN_AT_RESTART   false             // [SetOption56] Scan Wi-Fi network at restart for configured AP's
 #define WIFI_SCAN_REGULARLY    true              // [SetOption57] Scan Wi-Fi network every 44 minutes for configured AP's
 
@@ -95,7 +96,11 @@
 #define OTA_URL                "http://ota.tasmota.com/tasmota/release/tasmota.bin.gz"  // [OtaUrl]
 #endif  // ESP8266
 #ifdef ESP32
+#ifdef CONFIG_IDF_TARGET_ESP32C3
+#define OTA_URL                "http://ota.tasmota.com/tasmota32/release/tasmota32c3.bin"  // [OtaUrl]
+#else   // No CONFIG_IDF_TARGET_ESP32C3
 #define OTA_URL                "http://ota.tasmota.com/tasmota32/release/tasmota32.bin"  // [OtaUrl]
+#endif  //  CONFIG_IDF_TARGET_ESP32C3
 #endif  // ESP32
 
 // -- MQTT ----------------------------------------
@@ -172,7 +177,8 @@
 #define FRIENDLY_NAME          "Tasmota"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
 #define EMULATION              EMUL_NONE         // [Emulation] Select Belkin WeMo (single relay/light) or Hue Bridge emulation (multi relay/light) (EMUL_NONE, EMUL_WEMO or EMUL_HUE)
 #define EMULATION_HUE_1ST_GEN  false             // [Emulation] Force SetOption109 1 - if you only have Echo Dot 2nd gen devices
-#define CORS_DOMAIN            ""                // [Cors] CORS Domain for preflight requests
+//#define USE_CORS                                 // [Cors] Enable CORS - Be aware that this feature is unsecure ATM (https://github.com/arendst/Tasmota/issues/6767)
+  #define CORS_DOMAIN            ""                // [Cors] CORS Domain for preflight requests
 
 // -- HTTP Options --------------------------------
 #define GUI_SHOW_HOSTNAME      false             // [SetOption53] Show hostname and IP address in GUI main menu
@@ -319,6 +325,7 @@
 #define LIGHT_VIRTUAL_CT       false             // [SetOption106] Virtual CT - Creates a virtual White ColorTemp for RGBW lights
 #define LIGHT_VIRTUAL_CT_CW    false             // [SetOption107] Virtual CT Channel - signals whether the hardware white is cold CW (true) or warm WW (false)
 #define LIGHT_VIRTUAL_CT_POINTS 3                // Number of reference points for Virtual CT (min 2, default 3)
+#define USE_AC_ZERO_CROSS_DIMMER                 // Requires USE_COUNTER and USE_LIGHT
 
 // -- Energy --------------------------------------
 #define ENERGY_VOLTAGE_ALWAYS  false             // [SetOption21] Enable show voltage even if powered off
@@ -388,6 +395,16 @@
 // -- OTA -----------------------------------------
 //#define USE_ARDUINO_OTA                          // Add optional support for Arduino OTA (+13k code)
 
+// -- Influxdb ------------------------------------
+//#define USE_INFLUXDB                             // Enable influxdb support (+5k code)
+//  #define INFLUXDB_STATE     0                   // [Ifx] Influxdb initially Off (0) or On (1)
+//  #define INFLUXDB_VERSION   1                   // Version of Influxdb 1 or 2
+//  #define INFLUXDB_HOST      "influxdb"          // [IfxHost] Influxdb hostname or IP address
+//  #define INFLUXDB_PORT      8086                // [IfxPort] Influxdb port number
+//  #define INFLUXDB_ORG       ""                  // [IfxUser, IfxOrg] Influxdb v1 username or v2 organisation
+//  #define INFLUXDB_TOKEN     ""                  // [IfxPassword, IfxToken] Influxdb v1 password or v2 token
+//  #define INFLUXDB_BUCKET    "db"                // [IfxDatabase, IfxBucket] Influxdb v1 database or v2 bucket
+
 // -- MQTT ----------------------------------------
 #define MQTT_LWT_OFFLINE       "Offline"         // MQTT LWT offline topic message
 #define MQTT_LWT_ONLINE        "Online"          // MQTT LWT online topic message
@@ -445,9 +462,11 @@
 #define USE_WEBSERVER                            // Enable web server and Wi-Fi Manager (+66k code, +8k mem)
   #define WEB_PORT             80                // Web server Port for User and Admin mode
   #define WEB_USERNAME         "admin"           // Web server Admin mode user name
+//  #define DISABLE_REFERER_CHK                     // [SetOption128] Disable HTTP API
 //  #define USE_JAVASCRIPT_ES6                     // Enable ECMAScript6 syntax using less JavaScript code bytes (fails on IE11)
   #define USE_ENHANCED_GUI_WIFI_SCAN             // Enable Wi-Fi scan output with BSSID (+0k5 code)
 //  #define USE_WEBSEND_RESPONSE                   // Enable command WebSend response message (+1k code)
+//  #define USE_WEBGETCONFIG                       // Enable restoring config from external webserver (+0k6)
   #define USE_EMULATION_HUE                      // Enable Hue Bridge emulation for Alexa (+14k code, +2k mem common)
   #define USE_EMULATION_WEMO                     // Enable Belkin WeMo emulation for Alexa (+6k code, +2k mem common)
   // #define USE_CCLOADER                           // Enable CCLoader FW upgrade tool (for CC25xx devices)
@@ -592,6 +611,7 @@
 //  #define USE_MGC3130                            // [I2cDriver27] Enable MGC3130 Electric Field Effect Sensor (I2C address 0x42) (+2k7 code, 0k3 mem)
 //  #define USE_MAX44009                           // [I2cDriver28] Enable MAX44009 Ambient Light sensor (I2C addresses 0x4A and 0x4B) (+0k8 code)
 //  #define USE_SCD30                              // [I2cDriver29] Enable Sensiron SCd30 CO2 sensor (I2C address 0x61) (+3k3 code)
+//  #define USE_SCD40                              // [I2cDriver62] Enable Sensiron SCd40/Scd41 CO2 sensor (I2C address 0x62) (+3k5 code)
 //  #define USE_SPS30                              // [I2cDriver30] Enable Sensiron SPS30 particle sensor (I2C address 0x69) (+1.7 code)
   #define USE_ADE7953                            // [I2cDriver7] Enable ADE7953 Energy monitor as used on Shelly 2.5 (I2C address 0x38) (+1k5)
 //  #define USE_VL53L0X                            // [I2cDriver31] Enable VL53L0x time of flight sensor (I2C address 0x29) (+4k code)
@@ -608,7 +628,7 @@
 //  #define USE_DHT12                              // [I2cDriver41] Enable DHT12 humidity and temperature sensor (I2C address 0x5C) (+0k7 code)
 //  #define USE_DS1624                             // [I2cDriver42] Enable DS1624, DS1621 temperature sensor (I2C addresses 0x48 - 0x4F) (+1k2 code)
 //  #define USE_AHT1x                              // [I2cDriver43] Enable AHT10/15 humidity and temperature sensor (I2C address 0x38, 0x39) (+0k8 code)
-//    #define USE_AHT2x                            // [I2cDriver43] Enable AHT20 instead of AHT1x humidity and temperature sensor (I2C address 0x38) (+0k8 code)
+//  #define USE_AHT2x                              // [I2cDriver43] Enable AHT20 instead of AHT1x humidity and temperature sensor (I2C address 0x38) (+0k8 code)
 //  #define USE_WEMOS_MOTOR_V1                     // [I2cDriver44] Enable Wemos motor driver V1 (I2C addresses 0x2D - 0x30) (+0k7 code)
 //    #define WEMOS_MOTOR_V1_ADDR  0x30            // Default I2C address 0x30
 //    #define WEMOS_MOTOR_V1_FREQ  1000            // Default frequency
@@ -637,6 +657,12 @@
 //  #define USE_BM8563                             // [I2cDriver59] Enable BM8563 RTC - found in M5Stack - support both I2C buses on ESP32 (I2C address 0x51) (+2k5 code)
 //  #define USE_AM2320                             // [I2cDriver60] Enable AM2320 temperature and humidity Sensor (I2C address 0x5C) (+1k code)
 //  #define USE_T67XX                              // [I2cDriver61] Enable Telaire T67XX CO2 sensor (I2C address 0x15) (+1k3 code)
+//  #define USE_HM330X                             // [I2cDriver63] Enable support for SeedStudio Grove Particule sensor (I2C address 0x40) (+1k5 code)
+//  #define USE_HDC2010                            // [I2cDriver64] Enable HDC2010 temperature/humidity sensor (I2C address 0x40) (+1k5 code)
+//    #define HM330X_DEFAULT_ADDRESS    0x40       // Option: change default I2C address for HM330X used in SeedSTudio Particucle Sensor
+//    #define HM330X_WARMUP_DELAY       30         // Option: change warmup delay during which data are not read from sensor after a power up
+//    #define HM330X_HIDE_OUT_OF_DATE   false      // Option: change to true to hide data from web GUI and SENSOR while sensor is asleep
+
 //  #define USE_DISPLAY                            // Add I2C Display Support (+2k code)
     #define USE_DISPLAY_MODES1TO5                // Enable display mode 1 to 5 in addition to mode 0
     #define USE_DISPLAY_LCD                      // [DisplayModel 1] [I2cDriver3] Enable Lcd display (I2C addresses 0x27 and 0x3F) (+6k code)
@@ -678,7 +704,6 @@
     #define USE_DISPLAY_ILI9341                  // [DisplayModel 4] Enable ILI9341 Tft 480x320 display (+19k code)
 //    #define USE_DISPLAY_EPAPER_29                // [DisplayModel 5] Enable e-paper 2.9 inch display (+19k code)
 //    #define USE_DISPLAY_EPAPER_42                // [DisplayModel 6] Enable e-paper 4.2 inch display
-//    #define USE_DISPLAY_ILI9488                  // [DisplayModel 8] [I2cDriver38] (Touch)
 //    #define USE_DISPLAY_SSD1351                  // [DisplayModel 9] Enable SSD1351 module
 //    #define USE_DISPLAY_RA8876                   // [DisplayModel 10] [I2cDriver39] (Touch)
 //    #define USE_DISPLAY_ST7789                   // [DisplayModel 12] Enable ST7789 module
@@ -731,6 +756,10 @@
 //#define USE_AS608                                // Add support for AS608 optical and R503 capacitive fingerprint sensor (+3k code)
 //  #define USE_AS608_MESSAGES                     // Add verbose error messages (+0k4 code)
 //#define USE_TFMINIPLUS                           // Add support for TFmini Plus (TFmini, TFmini-S) LiDAR modules via UART interface (+0k8)
+//#define USE_HRG15                                // Add support for Hydreon RG-15 Solid State Rain sensor (+1k5 code)
+//#define USE_VINDRIKTNING                         // Add support for IKEA VINDRIKTNING particle concentration sensor (+0k6 code)
+//  #define VINDRIKTNING_SHOW_PM1                  // Display undocumented/supposed PM1.0 values
+//  #define VINDRIKTNING_SHOW_PM10                 // Display undocumented/supposed PM10 values
 
 // -- Power monitoring sensors --------------------
 #define USE_ENERGY_SENSOR                        // Add support for Energy Monitors (+14k code)
@@ -761,11 +790,12 @@
 //#define USE_LE01MR                               // Add support for F&F LE-01MR Modbus energy monitor (+1k code)
   #define LE01MR_SPEED         9600              // LE-01MR modbus baudrate (default: 9600)
   #define LE01MR_ADDR          1                 // LE-01MR modbus address (default: 0x01)
-#define USE_BL0940                               // Add support for BL0940 Energy monitor as used in Blitzwolf SHP-10 (+1k6 code)
+#define USE_BL09XX                               // Add support for various BL09XX Energy monitor as used in Blitzwolf SHP-10 or Sonoff Dual R3 v2 (+1k6 code)
 //#define USE_TELEINFO                             // Add support for Teleinfo via serial RX interface (+5k2 code, +168 RAM + SmartMeter LinkedList Values RAM)
 //#define USE_IEM3000                              // Add support for Schneider Electric iEM3000-Modbus series energy monitor (+0k8 code)
   #define IEM3000_SPEED          19200           // iEM3000-Modbus RS485 serial speed (default: 19200 baud)
   #define IEM3000_ADDR           1               // iEM3000-Modbus modbus address (default: 0x01)
+//  #define IEM3000_IEM3155                        // Compatibility fix for Iem3155 (changes Power and Energy total readout)
 //#define USE_WE517                                // Add support for Orno WE517-Modbus energy monitor (+1k code)
 
 // -- Low level interface devices -----------------
@@ -823,8 +853,8 @@
     #define IR_RCV_WHILE_SENDING    0            // Turns on receiver while sending messages, i.e. receive your own. This is unreliable and can cause IR timing issues
 
 // -- Zigbee interface ----------------------------
-//#define USE_ZIGBEE                                // Enable serial communication with Zigbee CC2530 flashed with ZNP (+49k code, +3k mem)
-  #define USE_ZIGBEE_ZNP                         // Enable ZNP protocol, needed for CC2530 based devices
+//#define USE_ZIGBEE                                // Enable serial communication with Zigbee CC2530/CC2652 flashed with ZNP or EFR32 flashed with EZSP (+49k code, +3k mem)
+  #define USE_ZIGBEE_ZNP                         // Enable ZNP protocol, needed for CC2530/CC2652 based devices
 //  #define USE_ZIGBEE_EZSP                        // Enable EZSP protocol, needed for EFR32 EmberZNet based devices, like Sonoff Zigbee bridge
                                                  // Note: USE_ZIGBEE_ZNP and USE_ZIGBEE_EZSP are mutually incompatible, you must select exactly one
   // #define USE_ZIGBEE_EEPROM                      // Use the EEPROM from the Sonoff ZBBridge to save Zigbee configuration and data
@@ -843,6 +873,8 @@
 
 
   // Auto-binding constants, see `Z_autoAttributeReporting`
+  #define USE_ZIGBEE_AUTOBIND_MAX_ENDPOINTS 8       // max number of endpoint receiving auto-bind requests
+  #define USE_ZIGBEE_AUTOBIND_MAX_CLUSTER   0x10    // max endpoint number (excluded receiving auto-bind requests)
   // Below are the threshold for attribute reporting
   #define USE_ZIGBEE_AUTOBIND_BATTVOLTAGE   0.2     // V
   #define USE_ZIGBEE_AUTOBIND_BATTPERCENT   5       // %
@@ -957,14 +989,23 @@
 //#define USE_IBEACON_ESP32
 //#define USE_WEBCAM                               // Add support for webcam
 
+// #define USE_AUTOCONF                             // Enable Esp32 autoconf feature, requires USE_BERRY and USE_WEBCLIENT_HTTPS (12KB Flash)
 #define USE_BERRY                                // Enable Berry scripting language
-//#define USE_BERRY_PSRAM                        // Allocate Berry memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
-
+  #define USE_BERRY_PYTHON_COMPAT                // Enable by default `import python_compat`
+  #define USE_BERRY_TIMEOUT             4000     // Timeout in ms, will raise an exception if running time exceeds this timeout
+  #define USE_BERRY_PSRAM                        // Allocate Berry memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
+  // #define USE_BERRY_DEBUG                        // Compile Berry bytecode with line number information, makes exceptions easier to debug. Adds +8% of memory consumption for compiled code
+  #define USE_WEBCLIENT                          // Enable `webclient` to make HTTP/HTTPS requests. Can be disabled for security reasons.
+    // #define USE_WEBCLIENT_HTTPS                  // Enable HTTPS outgoing requests based on BearSSL (much ligher then mbedTLS, 42KB vs 150KB) in insecure mode (no verification of server's certificate)
+                                                 // Note that only one cipher is enabled: ECDHE_RSA_WITH_AES_128_GCM_SHA256 which is very commonly used and highly secure
+    #define USE_BERRY_WEBCLIENT_USERAGENT  "TasmotaClient" // default user-agent used, can be changed with `wc.set_useragent()`
+    #define USE_BERRY_WEBCLIENT_TIMEOUT  2000    // Default timeout in milliseconds
 #define USE_CSE7761                              // Add support for CSE7761 Energy monitor as used in Sonoff Dual R3
 
 // -- LVGL Graphics Library ---------------------------------
 //#define USE_LVGL                                 // LVGL Engine, requires Berry (+382KB)
   #define USE_LVGL_PSRAM                         // Allocate LVGL memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
+  #define USE_LVGL_OPENHASP                      // Enable OpenHASP template compatiblity (adds LVGL template and some fonts)
   #define USE_LVGL_MAX_SLEEP  10                 // max sleep in ms when LVGL is enabled, more than 10ms will make display less responsive
   #define USE_LVGL_PNG_DECODER                   // include a PNG image decoder from file system (+16KB)
   //#define USE_LVGL_FREETYPE                      // Use the FreeType renderer to display fonts using native TTF files in file system (+77KB flash)
@@ -975,40 +1016,31 @@
     #define USE_LVGL_FREETYPE_MAX_BYTES_PSRAM 64*1024  // max bytes in cache when using PSRAM
   #define USE_LVGL_BG_DEFAULT 0x000000           // Default color for the uninitialized background screen (black)
   // Disabling select widgets that will be rarely used in Tasmota (-13KB)
-    #define BE_LV_WIDGET_ARC 1
-    #define BE_LV_WIDGET_BAR 1
-    #define BE_LV_WIDGET_BTN 1
-    #define BE_LV_WIDGET_BTNMATRIX 1
-    #define BE_LV_WIDGET_CALENDAR 0
-    #define BE_LV_WIDGET_CANVAS 1
-    #define BE_LV_WIDGET_CHART 1
-    #define BE_LV_WIDGET_CHECKBOX 1
-    #define BE_LV_WIDGET_CONT 1
-    #define BE_LV_WIDGET_CPICKER 1
-    #define BE_LV_WIDGET_DROPDOWN 1
-    #define BE_LV_WIDGET_GAUGE 1
-    #define BE_LV_WIDGET_IMG 1
-    #define BE_LV_WIDGET_IMGBTN 1
-    #define BE_LV_WIDGET_KEYBOARD 0
-    #define BE_LV_WIDGET_LABEL 1
-    #define BE_LV_WIDGET_LED 1
-    #define BE_LV_WIDGET_LINE 1
-    #define BE_LV_WIDGET_LINEMETER 1
-    #define BE_LV_WIDGET_LIST 1
-    #define BE_LV_WIDGET_MSGBOX 1
-    #define BE_LV_WIDGET_OBJMASK 1
-    #define BE_LV_WIDGET_TEMPL 1
-    #define BE_LV_WIDGET_PAGE 1
-    #define BE_LV_WIDGET_ROLLER 1
-    #define BE_LV_WIDGET_SLIDER 1
-    #define BE_LV_WIDGET_SPINBOX 1
-    #define BE_LV_WIDGET_SPINNER 1
-    #define BE_LV_WIDGET_SWITCH 1
-    #define BE_LV_WIDGET_TABLE 1
-    #define BE_LV_WIDGET_TABVIEW 1
-    #define BE_LV_WIDGET_TEXTAREA 1
-    #define BE_LV_WIDGET_TILEVIEW 1
-    #define BE_LV_WIDGET_WIN 0
+  // Main widgets as defined in LVGL8
+    #define BE_LV_WIDGET_ARC
+    #define BE_LV_WIDGET_BAR
+    #define BE_LV_WIDGET_BTN
+    #define BE_LV_WIDGET_BTNMATRIX
+    #define BE_LV_WIDGET_CANVAS
+    #define BE_LV_WIDGET_CHECKBOX
+    #define BE_LV_WIDGET_DROPDOWN
+    #define BE_LV_WIDGET_IMG
+    #define BE_LV_WIDGET_LABEL
+    #define BE_LV_WIDGET_LINE
+    #define BE_LV_WIDGET_ROLLER
+    #define BE_LV_WIDGET_SLIDER
+    #define BE_LV_WIDGET_SWITCH
+    #define BE_LV_WIDGET_TABLE
+    #define BE_LV_WIDGET_TEXTAREA
+
+    #define BE_LV_WIDGET_CHART
+    #define BE_LV_WIDGET_COLORWHEEL
+    #define BE_LV_WIDGET_IMGBTN
+    #define BE_LV_WIDGET_LED
+    #define BE_LV_WIDGET_METER
+    #define BE_LV_WIDGET_MSGBOX
+    #define BE_LV_WIDGET_SPINBOX
+    #define BE_LV_WIDGET_SPINNER
 
 #endif  // ESP32
 
@@ -1020,6 +1052,15 @@
 //#define DEBUG_TASMOTA_DRIVER                     // Enable driver debug messages
 //#define DEBUG_TASMOTA_SENSOR                     // Enable sensor debug messages
 //#define USE_DEBUG_DRIVER                         // Use xdrv_99_debug.ino providing commands CpuChk, CfgXor, CfgDump, CfgPeek and CfgPoke
+
+/*********************************************************************************************\
+ * Profiling features
+\*********************************************************************************************/
+
+//#define USE_PROFILING                            // Enable profiling
+//#define PROFILE_THRESHOLD            70          // Minimum duration in milliseconds to start logging
+//#define USE_PROFILE_DRIVER                       // Enable driver profiling
+//#define USE_PROFILE_FUNCTION                     // Enable driver function profiling
 
 /*********************************************************************************************\
  * Optional firmware configurations
@@ -1051,13 +1092,26 @@
 #endif
 
 /*********************************************************************************************\
+ * Post-process compile options for Autoconf
+\*********************************************************************************************/
+
+#if defined(USE_AUTOCONF)
+  #ifndef USE_BERRY
+    #define USE_BERRY
+  #endif
+  #ifndef USE_WEBCLIENT_HTTPS
+    #define USE_WEBCLIENT_HTTPS
+  #endif
+#endif // USE_AUTOCONF
+
+/*********************************************************************************************\
  * Post-process compile options for TLS
 \*********************************************************************************************/
 
-#if defined(USE_MQTT_TLS) || defined(USE_SENDMAIL) || defined(USE_TELEGRAM)
+#if defined(USE_MQTT_TLS) || defined(USE_SENDMAIL) || defined(USE_TELEGRAM) || defined(USE_WEBCLIENT_HTTPS) || defined(USE_ALEXA_AVS)
   #define USE_TLS                                  // flag indicates we need to include TLS code
 
-  #if defined(USE_MQTT_AWS_IOT) || defined(USE_TELEGRAM)
+  #if defined(USE_MQTT_AWS_IOT) || defined(USE_TELEGRAM) || defined(USE_WEBCLIENT_HTTPS)
     #define USE_MQTT_TLS_FORCE_EC_CIPHER           // AWS IoT and TELEGRAM require EC Cipher
   #endif
 #endif

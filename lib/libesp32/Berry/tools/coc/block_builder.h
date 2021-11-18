@@ -28,6 +28,7 @@ private:
         std::string name;
         std::map<std::string, std::string> attr;
         std::map<std::string, std::string> data;
+        std::vector<std::string> data_ordered;  /* used to retrieve in insertion order */
     };
 
     std::string block_tostring(const block &block);
@@ -38,7 +39,6 @@ private:
     std::string scope(const block &block);
     std::string super(const block &block);
     std::string name(const block &block);
-    std::string init(const block &block);
     void writefile(const std::string &filename, const std::string &text);
 
 private:
