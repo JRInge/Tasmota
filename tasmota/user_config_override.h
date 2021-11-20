@@ -356,7 +356,7 @@ Relay1     21         224       Relay
 
     #ifndef USE_DISPLAY_SSD1306
     #define USE_DISPLAY_SSD1306                    // [DisplayModel 2] [I2cDriver4] Enable SSD1306 Oled 128x64 display (I2C addresses 0x3C and 0x3D) (+16k code)
-    #undef
+    #endif
 
     #ifdef USE_DISPLAY_LCD
     #undef USE_DISPLAY_LCD                         // [DisplayModel 1] [I2cDriver3] Enable Lcd display (I2C addresses 0x27 and 0x3F) (+6k code)
