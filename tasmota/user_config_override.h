@@ -307,6 +307,9 @@ Relay1     21         224       Relay
 
     // Put here your override for firmware tasmota32-mini-d1-esp32
 
+    #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
+    #define USER_TEMPLATE "{\"NAME\":\"ESP32-D1 Mini\",\"GPIO\":[1,1,288,1,1,1,0,0,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,1,1,1,1,1,0,0,1],\"FLAG\":0,\"BASE\":1}"  // [Template] Set JSON template
+
 #endif
 
 // -- Options for firmware tasmota32-d1-airq ------
@@ -323,6 +326,9 @@ Relay1     21         224       Relay
     #define CODE_IMAGE_STR "mini-d1-esp32-airq"
 
     // Put here your override for firmware tasmota32-mini-d1-esp32
+
+    #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
+    #define USER_TEMPLATE "{\"NAME\":\"ESP32-D1 Mini\",\"GPIO\":[1,1,288,1,1,1,0,0,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,1,1,1,1,1,0,0,1],\"FLAG\":0,\"BASE\":1}"  // [Template] Set JSON template
 
     #ifndef  USE_I2C
     #define  USE_I2C
