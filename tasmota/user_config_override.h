@@ -325,7 +325,7 @@ Relay1     21         224       Relay
 #endif
 
 // -- Options for firmware tasmota32-d1-airq ------
-#ifdef FIRMWARE_D1_AIRQ
+#ifdef FIRMWARE_D1_32_AIRQ
 
     // If these settings are only for ESP32, you can check these
     // are used only when building for ESP32
