@@ -333,7 +333,7 @@ Relay1     21         224       Relay
     #error *** This setup is for tasmota32 only ***
     #endif
 
-    #warning **** Build: D1-AIRQ****
+    #warning **** Build: D1-32-AIRQ****
     #undef CODE_IMAGE_STR
     #define CODE_IMAGE_STR "mini-d1-esp32-airq"
 
@@ -388,6 +388,66 @@ Relay1     21         224       Relay
 
 #endif
 
+// -- Options for firmware tasmota-d1-airq ------
+#ifdef FIRMWARE_D1_AIRQ
+
+    // If these settings are only for ESP32, you can check these
+    // are used only when building for ESP32
+
+    #warning **** Build: D1-AIRQ****
+    #undef CODE_IMAGE_STR
+    #define CODE_IMAGE_STR "mini-d1-airq"
+
+    // Put here your override for firmware tasmota32-mini-d1-esp32
+
+    #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
+    #define USER_TEMPLATE "{\"NAME\":\"D1 Mini\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
+
+    #ifndef  USE_I2C
+    #define  USE_I2C
+    #endif
+
+    // -- Low level interface devices -----------------
+    #ifndef  USE_DHT
+    #define  USE_DHT                                 // Support for DHT11, AM2301 (DHT21, DHT22, AM2302, AM2321) and SI7021 Temperature and Humidity sensor (1k6 code)
+    #endif
+
+    // -- Optional modules ----------------------------
+
+    #ifndef USE_AHT2x
+    #define USE_AHT2x                              // [I2cDriver43] Enable AHT20 instead of AHT1x humidity and temperature sensor (I2C address 0x38) (+0k8 code)
+    #endif
+
+    #ifndef USE_VINDRIKTNING
+    #define USE_VINDRIKTNING                       // Add support for IKEA VINDRIKTNING particle concentration sensor (+0k6 code)
+    #endif
+    #ifndef VINDRIKTNING_SHOW_PM1
+    #define VINDRIKTNING_SHOW_PM1                  // Display undocumented/supposed PM1.0 values
+    #endif
+    #ifndef VINDRIKTNING_SHOW_PM10
+    #define VINDRIKTNING_SHOW_PM10                 // Display undocumented/supposed PM10 values
+    #endif
+
+
+    #ifndef USE_DISPLAY
+    #define USE_DISPLAY                            // Add I2C Display Support (+2k code)
+    #endif
+
+    #ifndef USE_DISPLAY_SSD1306
+    #define USE_DISPLAY_SSD1306                    // [DisplayModel 2] [I2cDriver4] Enable SSD1306 Oled 128x64 display (I2C addresses 0x3C and 0x3D) (+16k code)
+    #endif
+
+    #ifdef USE_DISPLAY_LCD
+    #undef USE_DISPLAY_LCD                         // [DisplayModel 1] [I2cDriver3] Enable Lcd display (I2C addresses 0x27 and 0x3F) (+6k code)
+    #endif
+    #ifdef USE_DISPLAY_MATRIX
+    #undef USE_DISPLAY_MATRIX                      // [DisplayModel 3] [I2cDriver5] Enable 8x8 Matrix display (I2C adresseses see below) (+11k code)
+    #endif
+    #ifdef USE_DISPLAY_SEVENSEG
+    #undef USE_DISPLAY_SEVENSEG                 // [DisplayModel 11] [I2cDriver47] Enable sevenseg display (I2C 0x70-0x77) (<+11k code)
+    #endif
+
+#endif
 
 
 #endif  // _USER_CONFIG_OVERRIDE_H_
