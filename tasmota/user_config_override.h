@@ -400,9 +400,11 @@ Relay1     21         224       Relay
     #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
     #define USER_TEMPLATE "{\"NAME\":\"D1 Mini\",\"GPIO\":[1,1,320,1,1,1,0,0,1,1,1,1,1,1],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
 
+/*
     #ifndef USE_CORS                                // Allow for cross-site AJAX requests (security risk)
     #define USE_CORS
     #endif
+*/
 
     #ifndef  USE_I2C
     #define  USE_I2C
