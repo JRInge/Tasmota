@@ -391,17 +391,18 @@ Relay1     21         224       Relay
 // -- Options for firmware tasmota-d1-airq ------
 #ifdef FIRMWARE_D1_AIRQ
 
-    // If these settings are only for ESP32, you can check these
-    // are used only when building for ESP32
-
     #warning **** Build: D1-AIRQ****
     #undef CODE_IMAGE_STR
     #define CODE_IMAGE_STR "mini-d1-airq"
 
-    // Put here your override for firmware tasmota32-mini-d1-esp32
+    // Put here your override for firmware tasmota-mini-d1-airq
 
     #define FALLBACK_MODULE        USER_MODULE      // [Module2] Select default module on fast reboot where USER_MODULE is user template
     #define USER_TEMPLATE "{\"NAME\":\"D1 Mini\",\"GPIO\":[1,1,320,1,1,1,0,0,1,1,1,1,1,1],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
+
+    #ifndef USE_CORS                                // Allow for cross-site AJAX requests (security risk)
+    #define USE_CORS
+    #endif
 
     #ifndef  USE_I2C
     #define  USE_I2C
